@@ -8,11 +8,13 @@ pipeline {
 			parallel {
 				stage('Unit tests') {
 					steps {
-						sh './mvnw test -D testGroups=unit.'
+						sh './mvnw test -D testGroups=unit'
 					}
 				}
 				stage(' Integration tests') {
-                    when { expression { params.RUN_INTEGRATION_TESTS } }
+                    when { 
+                        expression { return params.RUN_INTEGRATION_TESTS } 
+                    }
 					steps {
 						sh './mvnw test -D testGroups=integration'
 					}
@@ -20,15 +22,16 @@ pipeline {
 
 			}
         }
-        stage('Deploy'){
-            when {
-                expression { env.GIT_BRANCH == 'origin/main' }
-            }
-            input {
-            message 'Deploy the application?'
-            }
+        stage('Build'){
             steps {
-                echo 'Deploying...'
+                script{
+                    try {
+                        sh './mvnw package -D skipTests'
+                    } catch (ex) {
+                        echo "Error while generating JAR file"
+                        throw ex
+                    }
+                } 
             }
         }
 	}
